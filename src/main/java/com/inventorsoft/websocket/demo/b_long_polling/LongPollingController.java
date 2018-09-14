@@ -63,6 +63,6 @@ public class LongPollingController {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(PollingController.class, args);
+        SpringApplication.run(LongPollingController.class, args);
     }
 }
