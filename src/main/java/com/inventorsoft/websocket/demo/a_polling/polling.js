@@ -1,10 +1,15 @@
-setInterval(function () {
-    $.ajax({
-        url: "http://localhost:8080/patient/profile",
-        dataType: "json",
-        success: function (data) {
-            console.log(data);
-        }
-    });
-}, 5000);
+setInterval(
+    () => {
+        fetch('http://localhost:8080/patient/profile').then(data => {
+            console.debug('Blocking back-end');
+            console.debug(data);
+        });
+
+        fetch('http://localhost:8080/patient/profile/reactive').then(data => {
+            console.debug('Reactive back-end');
+            console.debug(data);
+        });
+    },
+    5000
+);
 
