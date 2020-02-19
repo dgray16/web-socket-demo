@@ -1,78 +1,112 @@
 package com.inventorsoft.websocket.demo.c_streaming;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-@SpringBootApplication(scanBasePackages = {"com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.c_streaming"})
-@RestController
-@AllArgsConstructor
 @Slf4j
+@RestController
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@SpringBootApplication(scanBasePackages = {
+        "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.c_streaming"
+})
 public class StreamingController {
 
     ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
-    @GetMapping(value = "/users-stream")
-    public ResponseBodyEmitter getUsers() {
-        ResponseBodyEmitter emitter = new ResponseBodyEmitter(1000000000L);
+    GoogleAPI googleAPI = new GoogleAPI();
 
-        List<UserDTO> users = new GoogleAPI().getUsers();
+    @GetMapping(value = "/users-stream")
+    public SseEmitter getUsers() {
+        SseEmitter sseEmitter = new SseEmitter(Duration.ofHours(NumberUtils.LONG_ONE).toMillis());
 
         threadPoolTaskExecutor.execute(() -> {
             try {
-                for (UserDTO user : users) {
-                    emitter.send(user.getName(), MediaType.TEXT_HTML);
-                    TimeUnit.MILLISECONDS.sleep(200L);
+                for (UserDTO user : googleAPI.getUsers()) {
+                    sseEmitter.send(generateBlockingEvent(user, "sse"));
+                    TimeUnit.MILLISECONDS.sleep(700L);
                 }
-            } catch(Exception e) {
-                emitter.completeWithError(e);
+            } catch (IOException | InterruptedException e) {
+                log.error("Error", e);
+                sseEmitter.completeWithError(e);
             } finally {
-                log.debug("Emitter has been finished");
-                emitter.complete();
+                log.debug("Emitter has finished its work");
+                sseEmitter.complete();
             }
         });
 
-        return emitter;
+        return sseEmitter;
     }
 
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Data
+    @GetMapping(value = "/users-stream/reactive")
+    public Flux<ServerSentEvent<String>> getUsersReactive() {
+        return Flux
+                .fromIterable(googleAPI.getUsers())
+                .delayElements(Duration.ofMillis(700L))
+                .map(dto -> generateReactiveEvent(dto, "sse-reactive"))
+                .doOnComplete(() -> log.debug("Reactive emitter has finished its work"));
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
     private class UserDTO {
-        private String name;
+
+        String name;
+        Integer id;
+
     }
 
     private class GoogleAPI {
 
         @SneakyThrows
         List<UserDTO> getUsers() {
-            TimeUnit.SECONDS.sleep(3L);
-            List<UserDTO> users = new ArrayList<>();
-
-            for (int i = 0; i < 300; i++) {
-                users.add(new UserDTO(RandomStringUtils.randomAlphanumeric(10) + "-" + i + " "));
-            }
-
-            return users;
+            return Stream
+                    .iterate(NumberUtils.INTEGER_ZERO, i -> i < 10, i -> i + NumberUtils.INTEGER_ONE)
+                    .map(i -> new UserDTO("Vova-" + RandomStringUtils.randomAlphanumeric(3) + "-" + i + " ", i))
+                    .collect(Collectors.toUnmodifiableList());
         }
 
+    }
+
+    private ServerSentEvent<String> generateReactiveEvent(UserDTO userDTO, String eventType) {
+        return ServerSentEvent
+                .builder(userDTO.getName())
+                .id(userDTO.getId().toString())
+                .event(eventType)
+                .build();
+    }
+
+    private SseEmitter.SseEventBuilder generateBlockingEvent(UserDTO user, String eventType) {
+        return SseEmitter.event()
+                .data(user.getName())
+                .id(user.getId().toString())
+                .name(eventType);
     }
 
     public static void main(String[] args) {
         SpringApplication.run(StreamingController.class, args);
     }
+
 }

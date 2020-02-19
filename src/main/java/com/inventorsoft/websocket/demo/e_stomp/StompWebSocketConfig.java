@@ -1,9 +1,11 @@
 package com.inventorsoft.websocket.demo.e_stomp;
 
-import com.google.gson.Gson;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.experimental.FieldDefaults;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
@@ -16,15 +18,19 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import java.util.ArrayList;
 import java.util.List;
 
-
-@SpringBootApplication(scanBasePackages = {"com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.e_stomp"})
-@Configuration
+@RequiredArgsConstructor
 @EnableWebSocketMessageBroker
+@Configuration(proxyBeanMethods = false)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@SpringBootApplication(scanBasePackages = {
+        "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.e_stomp"
+})
+
 public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    ObjectMapper objectMapper;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -34,14 +40,12 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Controller
+    @RequiredArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
     private class StompController {
 
-        private Service service = new Service();
-        private SimpMessagingTemplate simpMessagingTemplate;
-
-        public StompController(SimpMessagingTemplate simpMessagingTemplate) {
-            this.simpMessagingTemplate = simpMessagingTemplate;
-        }
+        Service service = new Service();
+        SimpMessagingTemplate simpMessagingTemplate;
 
         @SubscribeMapping("/get-data")
         public List<MessageDTO> getMessages() {
@@ -49,45 +53,30 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
 
         @MessageMapping("/send-data")
-        public void sendMessage(Message message) {
-            MessageRequest messageRequest = new Gson().fromJson(new String((byte[]) message.getPayload()), MessageRequest.class);
-
-            List<MessageRequest> messages = new ArrayList<>();
-            messages.add(messageRequest);
-
-            simpMessagingTemplate.convertAndSend("/get-data", messages);
-        }
-
-        @NoArgsConstructor
-        @AllArgsConstructor
-        @Data
-        private class MessageRequest {
-            private String message;
+        @SneakyThrows
+        public void sendMessage(Message<String> message) {
+            simpMessagingTemplate.convertAndSend("/get-data", "Hello front-end!");
         }
 
     }
 
     private class Service {
+
         public List<MessageDTO> getMessages() {
-            List<MessageDTO> messages = new ArrayList<>();
-
-            messages.add(new MessageDTO("Hello world!"));
-            messages.add(new MessageDTO("This, is, message!!!"));
-
-            return messages;
+            return List.of(new MessageDTO("Hello world!"), new MessageDTO("This, is, message!!!"));
         }
+
     }
 
-    @NoArgsConstructor
-    @Data
-    @AllArgsConstructor
+    @Value
     private class MessageDTO {
 
-        private String message;
+        String message;
 
     }
 
     public static void main(String[] args) {
         SpringApplication.run(StompWebSocketConfig.class, args);
     }
+
 }
