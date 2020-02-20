@@ -1,11 +1,8 @@
 package com.inventorsoft.websocket.demo.e_stomp;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.experimental.FieldDefaults;
+import lombok.Value;
 
-@Data
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@Value
 public class MessageRequest {
 
     String message;

@@ -1,9 +1,7 @@
 package com.inventorsoft.websocket.demo.e_stomp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import org.springframework.boot.SpringApplication;
@@ -17,6 +15,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -30,8 +30,6 @@ import java.util.List;
 
 public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    ObjectMapper objectMapper;
-
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry
@@ -44,32 +42,55 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
     private class StompController {
 
-        Service service = new Service();
+        MessageService messageService = new MessageService();
+
         SimpMessagingTemplate simpMessagingTemplate;
 
         @SubscribeMapping("/get-data")
-        public List<MessageDTO> getMessages() {
-            return service.getMessages();
+        public List<MessageDto> getMessages() {
+            return messageService.getMessages();
         }
 
         @MessageMapping("/send-data")
-        @SneakyThrows
         public void sendMessage(Message<String> message) {
-            simpMessagingTemplate.convertAndSend("/get-data", "Hello front-end!");
+            simpMessagingTemplate.convertAndSend("/get-data", List.of(new MessageDto("Hello front-end!")));
+        }
+
+
+        @SubscribeMapping("/get-data/reactive")
+        public void getMessagesReactive() {
+            messageService
+                    .getMessagesReactive()
+                    .collectList()
+                    .doOnNext(list -> simpMessagingTemplate.convertAndSend("/get-data/reactive", list))
+                    .subscribe();
+        }
+
+        @MessageMapping("/send-data/reactive")
+        public void sendMessageReactive(Message<String> message) {
+            Mono
+                    .just(new MessageDto("Hello front-end!"))
+                    .map(List::of)
+                    .doOnNext(value -> simpMessagingTemplate.convertAndSend("/get-data/reactive", value))
+                    .subscribe();
         }
 
     }
 
-    private class Service {
+    private class MessageService {
 
-        public List<MessageDTO> getMessages() {
-            return List.of(new MessageDTO("Hello world!"), new MessageDTO("This, is, message!!!"));
+        public List<MessageDto> getMessages() {
+            return List.of(new MessageDto("Hello world!"), new MessageDto("This, is, message!!!"));
+        }
+
+        public Flux<MessageDto> getMessagesReactive() {
+            return Flux.fromIterable(getMessages());
         }
 
     }
 
     @Value
-    private class MessageDTO {
+    private class MessageDto {
 
         String message;
 
