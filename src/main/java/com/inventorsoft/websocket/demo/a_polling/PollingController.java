@@ -14,9 +14,12 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @RestController
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@SpringBootApplication(scanBasePackages = {
-        "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.a_polling"
-})
+@SpringBootApplication(
+        scanBasePackages = {
+                "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.a_polling"
+        },
+        proxyBeanMethods = false
+)
 public class PollingController {
 
     PatientWebService patientWebService = new PatientWebService();

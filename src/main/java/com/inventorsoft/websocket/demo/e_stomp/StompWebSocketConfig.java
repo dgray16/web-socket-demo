@@ -18,15 +18,19 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor
 @EnableWebSocketMessageBroker
 @Configuration(proxyBeanMethods = false)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@SpringBootApplication(scanBasePackages = {
-        "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.e_stomp"
-})
+@SpringBootApplication(
+        scanBasePackages = {
+                "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.e_stomp"
+        },
+        proxyBeanMethods = false
+)
 
 public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
@@ -53,7 +57,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         @MessageMapping("/send-data")
         public void sendMessage(Message<String> message) {
-            simpMessagingTemplate.convertAndSend("/get-data", List.of(new MessageDto("Hello front-end!")));
+            simpMessagingTemplate.convertAndSend("/get-data", Collections.singletonList(new MessageDto("Hello front-end!")));
         }
 
 

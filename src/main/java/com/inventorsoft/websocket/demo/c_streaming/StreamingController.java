@@ -21,21 +21,23 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@SpringBootApplication(scanBasePackages = {
+@SpringBootApplication(
+        scanBasePackages = {
         "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.c_streaming"
-})
+        },
+        proxyBeanMethods = false
+)
 public class StreamingController {
 
     ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
-    GoogleAPI googleAPI = new GoogleAPI();
+    GoogleApi googleApi = new GoogleApi();
 
     @GetMapping(value = "/users-stream")
     public SseEmitter getUsers() {
@@ -43,7 +45,7 @@ public class StreamingController {
 
         threadPoolTaskExecutor.execute(() -> {
             try {
-                for (UserDTO user : googleAPI.getUsers()) {
+                for (UserDto user : googleApi.getUsers()) {
                     sseEmitter.send(generateBlockingEvent(user, "sse"));
                     TimeUnit.MILLISECONDS.sleep(700L);
                 }
@@ -62,7 +64,7 @@ public class StreamingController {
     @GetMapping(value = "/users-stream/reactive")
     public Flux<ServerSentEvent<String>> getUsersReactive() {
         return Flux
-                .fromIterable(googleAPI.getUsers())
+                .fromIterable(googleApi.getUsers())
                 .delayElements(Duration.ofMillis(700L))
                 .map(dto -> generateReactiveEvent(dto, "sse-reactive"))
                 .doOnComplete(() -> log.debug("Reactive emitter has finished its work"));
@@ -71,34 +73,34 @@ public class StreamingController {
     @Getter
     @RequiredArgsConstructor
     @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-    private class UserDTO {
+    private class UserDto {
 
         String name;
         Integer id;
 
     }
 
-    private class GoogleAPI {
+    private class GoogleApi {
 
         @SneakyThrows
-        List<UserDTO> getUsers() {
+        List<UserDto> getUsers() {
             return Stream
                     .iterate(NumberUtils.INTEGER_ZERO, i -> i < 10, i -> i + NumberUtils.INTEGER_ONE)
-                    .map(i -> new UserDTO("Vova-" + RandomStringUtils.randomAlphanumeric(3) + "-" + i + " ", i))
-                    .collect(Collectors.toUnmodifiableList());
+                    .map(i -> new UserDto("Vova-" + RandomStringUtils.randomAlphanumeric(3) + "-" + i + " ", i))
+                    .toList();
         }
 
     }
 
-    private ServerSentEvent<String> generateReactiveEvent(UserDTO userDTO, String eventType) {
+    private ServerSentEvent<String> generateReactiveEvent(UserDto userDto, String eventType) {
         return ServerSentEvent
-                .builder(userDTO.getName())
-                .id(userDTO.getId().toString())
+                .builder(userDto.getName())
+                .id(userDto.getId().toString())
                 .event(eventType)
                 .build();
     }
 
-    private SseEmitter.SseEventBuilder generateBlockingEvent(UserDTO user, String eventType) {
+    private SseEmitter.SseEventBuilder generateBlockingEvent(UserDto user, String eventType) {
         return SseEmitter.event()
                 .data(user.getName())
                 .id(user.getId().toString())
