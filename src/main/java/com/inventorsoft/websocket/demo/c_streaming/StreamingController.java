@@ -1,7 +1,6 @@
 package com.inventorsoft.websocket.demo.c_streaming;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
@@ -28,9 +27,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @SpringBootApplication(
-        scanBasePackages = {
-        "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.c_streaming"
-        },
+        scanBasePackages = {"com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.c_streaming"},
         proxyBeanMethods = false
 )
 public class StreamingController {
@@ -70,17 +67,9 @@ public class StreamingController {
                 .doOnComplete(() -> log.debug("Reactive emitter has finished its work"));
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-    private class UserDto {
+    private record UserDto(String name, Integer id) {}
 
-        String name;
-        Integer id;
-
-    }
-
-    private class GoogleApi {
+    private static class GoogleApi {
 
         @SneakyThrows
         List<UserDto> getUsers() {
@@ -94,16 +83,17 @@ public class StreamingController {
 
     private ServerSentEvent<String> generateReactiveEvent(UserDto userDto, String eventType) {
         return ServerSentEvent
-                .builder(userDto.getName())
-                .id(userDto.getId().toString())
+                .builder(userDto.name())
+                .id(userDto.id().toString())
                 .event(eventType)
                 .build();
     }
 
     private SseEmitter.SseEventBuilder generateBlockingEvent(UserDto user, String eventType) {
-        return SseEmitter.event()
-                .data(user.getName())
-                .id(user.getId().toString())
+        return SseEmitter
+                .event()
+                .data(user.name())
+                .id(user.id().toString())
                 .name(eventType);
     }
 

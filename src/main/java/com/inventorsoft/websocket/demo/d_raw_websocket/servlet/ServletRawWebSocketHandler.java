@@ -34,11 +34,11 @@ public class ServletRawWebSocketHandler extends TextWebSocketHandler {
         List<Patient> foundPatients = patientService.findAll();
 
         String allNames = foundPatients.stream()
-                .map(Patient::getName)
+                .map(Patient::name)
                 .collect(Collectors.joining(", "));
 
         SendMessageRequest request = objectMapper.readValue(message.getPayload(), SendMessageRequest.class);
-        session.sendMessage(new TextMessage("Your message is: " + request.getMessage()));
+        session.sendMessage(new TextMessage("Your message is: " + request.message()));
         session.sendMessage(new TextMessage("Response from server: " + allNames));
     }
 

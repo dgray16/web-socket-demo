@@ -42,13 +42,13 @@ public class ReactiveRawWebSocketHandler implements WebSocketHandler {
         /* Get all data from DB */
         Mono<WebSocketMessage> responseFromServer = patientService
                 .findAllReactive()
-                .map(Patient::getName)
+                .map(Patient::name)
                 .collect(Collectors.joining(", "))
                 .map(allNames -> "Response From Server: " + allNames)
                 .map(session::textMessage);
 
         Mono<WebSocketMessage> yourMessage = parseMessage(webSocketMessage.getPayloadAsText())
-                .map(SendMessageRequest::getMessage)
+                .map(SendMessageRequest::message)
                 .map(message -> session.textMessage("Your message is: " + message));
 
         session

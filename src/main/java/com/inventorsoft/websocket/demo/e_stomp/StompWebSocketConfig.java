@@ -2,7 +2,6 @@ package com.inventorsoft.websocket.demo.e_stomp;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -93,12 +92,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     }
 
-    @Value
-    private class MessageDto {
-
-        String message;
-
-    }
+    private record MessageDto(String message) {}
 
     public static void main(String[] args) {
         SpringApplication.run(StompWebSocketConfig.class, args);

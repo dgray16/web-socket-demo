@@ -1,7 +1,6 @@
 package com.inventorsoft.websocket.demo.a_polling;
 
 import lombok.AccessLevel;
-import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
@@ -36,21 +35,16 @@ public class PollingController {
         return ResponseEntity.ok(patientWebService.getPatientProfileReactive());
     }
 
-    @Value
-    private class PatientProfileDto {
+    private record PatientProfileDto(String name) {}
 
-        String name = "Vova";
-
-    }
-
-    private class PatientWebService {
+    private static class PatientWebService {
 
         PatientProfileDto getPatientProfile() {
-            return new PatientProfileDto();
+            return new PatientProfileDto("Vova");
         }
 
         Mono<PatientProfileDto> getPatientProfileReactive() {
-            return Mono.just(new PatientProfileDto());
+            return Mono.just(new PatientProfileDto("Vova"));
         }
 
     }

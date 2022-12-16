@@ -3,7 +3,6 @@ package com.inventorsoft.websocket.demo.b_long_polling;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -73,14 +72,9 @@ public class LongPollingController {
         return result;
     }
 
-    @Value
-    private class UserDto {
+    private record UserDto(String name) {}
 
-        String name;
-
-    }
-
-    private class GoogleApi {
+    private static class GoogleApi {
 
         @SneakyThrows
         List<UserDto> getUsers() {
@@ -97,7 +91,8 @@ public class LongPollingController {
         }
 
         private Stream<UserDto> getUsersStream() {
-            return IntStream.range(NumberUtils.INTEGER_ZERO, 5)
+            return IntStream
+                    .range(NumberUtils.INTEGER_ZERO, 5)
                     .mapToObj(i -> "Vova-" + RandomStringUtils.randomAlphabetic(i + NumberUtils.INTEGER_ONE))
                     .map(UserDto::new);
         }
