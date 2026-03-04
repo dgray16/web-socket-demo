@@ -1,8 +1,5 @@
 package com.inventorsoft.websocket.demo.e_stomp;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +17,8 @@ import reactor.core.publisher.Mono;
 import java.util.Collections;
 import java.util.List;
 
-@RequiredArgsConstructor
 @EnableWebSocketMessageBroker
 @Configuration(proxyBeanMethods = false)
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @SpringBootApplication(
         scanBasePackages = {
                 "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.e_stomp"
@@ -31,7 +26,7 @@ import java.util.List;
         proxyBeanMethods = false
 )
 
-public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
+class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -41,27 +36,28 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Controller
-    @RequiredArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
     private class StompController {
 
-        MessageService messageService = new MessageService();
+        private final MessageService messageService = new MessageService();
+        private final SimpMessagingTemplate simpMessagingTemplate;
 
-        SimpMessagingTemplate simpMessagingTemplate;
+        private StompController(final SimpMessagingTemplate simpMessagingTemplate) {
+            this.simpMessagingTemplate = simpMessagingTemplate;
+        }
 
         @SubscribeMapping("/get-data")
-        public List<MessageDto> getMessages() {
+        List<MessageDto> getMessages() {
             return messageService.getMessages();
         }
 
         @MessageMapping("/send-data")
-        public void sendMessage(Message<String> message) {
+        void sendMessage(final Message<String> message) {
             simpMessagingTemplate.convertAndSend("/get-data", Collections.singletonList(new MessageDto("Hello front-end!")));
         }
 
 
         @SubscribeMapping("/get-data/reactive")
-        public void getMessagesReactive() {
+        void getMessagesReactive() {
             messageService
                     .getMessagesReactive()
                     .collectList()
@@ -70,7 +66,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         }
 
         @MessageMapping("/send-data/reactive")
-        public void sendMessageReactive(Message<String> message) {
+        void sendMessageReactive(final Message<String> message) {
             Mono
                     .just(new MessageDto("Hello front-end!"))
                     .map(List::of)
@@ -94,7 +90,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private record MessageDto(String message) {}
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(StompWebSocketConfig.class, args);
     }
 

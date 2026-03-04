@@ -11,9 +11,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         },
         proxyBeanMethods = false
 )
-public class ServletRawWebSocketApplication {
+class ServletRawWebSocketApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(ServletRawWebSocketApplication.class, args);
     }
 

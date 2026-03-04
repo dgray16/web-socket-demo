@@ -1,12 +1,9 @@
 package com.inventorsoft.websocket.demo.b_long_polling;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.ResponseEntity;
@@ -23,23 +20,25 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @RestController
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @SpringBootApplication(
         scanBasePackages = {
                 "com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.b_long_polling"
         },
         proxyBeanMethods = false
 )
-@Slf4j
-public class LongPollingController {
+class LongPollingController {
 
-    ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    private static final Logger LOG = LoggerFactory.getLogger(LongPollingController.class);
 
-    GoogleApi googleApi = new GoogleApi();
+    private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    private final GoogleApi googleApi = new GoogleApi();
+
+    LongPollingController(final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+        this.threadPoolTaskExecutor = threadPoolTaskExecutor;
+    }
 
     @GetMapping(value = "/users")
-    public DeferredResult<ResponseEntity<List<UserDto>>> getUsers() {
+    DeferredResult<ResponseEntity<List<UserDto>>> getUsers() {
         DeferredResult<ResponseEntity<List<UserDto>>> result = new DeferredResult<>();
 
         threadPoolTaskExecutor.execute(() -> {
@@ -56,7 +55,7 @@ public class LongPollingController {
     }
 
     @GetMapping(value = "/users/reactive")
-    public DeferredResult<ResponseEntity<Flux<UserDto>>> getUsersReactive() {
+    DeferredResult<ResponseEntity<Flux<UserDto>>> getUsersReactive() {
         DeferredResult<ResponseEntity<Flux<UserDto>>> result = new DeferredResult<>();
 
         threadPoolTaskExecutor.execute(() -> {
@@ -76,30 +75,33 @@ public class LongPollingController {
 
     private static class GoogleApi {
 
-        @SneakyThrows
         List<UserDto> getUsers() {
-            TimeUnit.SECONDS.sleep(4L);
-            log.debug("Get users call...");
+            try {
+                TimeUnit.SECONDS.sleep(4L);
+            } catch (InterruptedException e) {}
+
+            LOG.debug("Get users call...");
             return getUsersStream().toList();
         }
 
-        @SneakyThrows
         Flux<UserDto> getUsersReactive() {
-            TimeUnit.SECONDS.sleep(4L);
-            log.debug("Get users call reactive...");
+            try {
+                TimeUnit.SECONDS.sleep(4L);
+            } catch (InterruptedException e) {}
+            LOG.debug("Get users call reactive...");
             return Flux.fromStream(this::getUsersStream);
         }
 
         private Stream<UserDto> getUsersStream() {
             return IntStream
                     .range(NumberUtils.INTEGER_ZERO, 5)
-                    .mapToObj(i -> "Vova-" + RandomStringUtils.randomAlphabetic(i + NumberUtils.INTEGER_ONE))
+                    .mapToObj(i -> "Vova-" + RandomStringUtils.insecure().nextAlphabetic(i + NumberUtils.INTEGER_ONE))
                     .map(UserDto::new);
         }
 
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(LongPollingController.class, args);
     }
 

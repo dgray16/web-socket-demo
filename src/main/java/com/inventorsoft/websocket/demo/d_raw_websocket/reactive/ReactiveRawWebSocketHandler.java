@@ -1,36 +1,35 @@
 package com.inventorsoft.websocket.demo.d_raw_websocket.reactive;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inventorsoft.websocket.demo.d_raw_websocket.common.Patient;
 import com.inventorsoft.websocket.demo.d_raw_websocket.common.PatientService;
 import com.inventorsoft.websocket.demo.d_raw_websocket.common.SendMessageRequest;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReactiveRawWebSocketHandler implements WebSocketHandler {
 
-    Set<WebSocketSession> sessions = new HashSet<>();
+    private final Set<WebSocketSession> sessions = new HashSet<>();
 
-    ObjectMapper objectMapper;
-    PatientService patientService;
+    private final JsonMapper jsonMapper;
+    private final PatientService patientService;
+
+    public ReactiveRawWebSocketHandler(final JsonMapper jsonMapper, final PatientService patientService) {
+        this.jsonMapper = jsonMapper;
+        this.patientService = patientService;
+    }
 
     @Override
-    public Mono<Void> handle(WebSocketSession session) {
+    public Mono<Void> handle(final WebSocketSession session) {
         sessions.add(session);
         return session
                 .receive().doOnNext(webSocketMessage -> processMessage(session, webSocketMessage))
@@ -56,9 +55,8 @@ public class ReactiveRawWebSocketHandler implements WebSocketHandler {
                 .subscribe();
     }
 
-    @SneakyThrows
     private Mono<SendMessageRequest> parseMessage(String message) {
-        return Mono.just(objectMapper.readValue(message, SendMessageRequest.class));
+        return Mono.just(jsonMapper.readValue(message, SendMessageRequest.class));
     }
 
 }

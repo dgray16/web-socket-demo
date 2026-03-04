@@ -11,9 +11,9 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
         },
         proxyBeanMethods = false
 )
-public class ReactiveRawWebSocketApplication {
+class ReactiveRawWebSocketApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         new SpringApplicationBuilder(ReactiveRawWebSocketApplication.class)
                 .web(WebApplicationType.REACTIVE)
                 .run(args);

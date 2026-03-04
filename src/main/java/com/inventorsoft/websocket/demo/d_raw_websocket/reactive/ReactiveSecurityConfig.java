@@ -8,11 +8,11 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @EnableWebFluxSecurity
 @Configuration(proxyBeanMethods = false)
-public class ReactiveSecurityConfig {
+class ReactiveSecurityConfig {
 
     @Bean
-    SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity httpSecurity) {
-        return httpSecurity.authorizeExchange().pathMatchers("/**").permitAll().and().build();
+    SecurityWebFilterChain securityWebFilterChain(final ServerHttpSecurity httpSecurity) {
+        return httpSecurity.authorizeExchange(s -> s.pathMatchers("/**").permitAll()).build();
     }
 
 }

@@ -1,12 +1,9 @@
 package com.inventorsoft.websocket.demo.c_streaming;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.codec.ServerSentEvent;
@@ -22,22 +19,24 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-@Slf4j
 @RestController
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @SpringBootApplication(
         scanBasePackages = {"com.inventorsoft.websocket.demo.config", "com.inventorsoft.websocket.demo.c_streaming"},
         proxyBeanMethods = false
 )
-public class StreamingController {
+class StreamingController {
 
-    ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    private static final Logger LOG = LoggerFactory.getLogger(StreamingController.class);
 
-    GoogleApi googleApi = new GoogleApi();
+    private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    private final GoogleApi googleApi = new GoogleApi();
+
+    StreamingController(final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+        this.threadPoolTaskExecutor = threadPoolTaskExecutor;
+    }
 
     @GetMapping(value = "/users-stream")
-    public SseEmitter getUsers() {
+    SseEmitter getUsers() {
         SseEmitter sseEmitter = new SseEmitter(Duration.ofHours(NumberUtils.LONG_ONE).toMillis());
 
         threadPoolTaskExecutor.execute(() -> {
@@ -47,10 +46,10 @@ public class StreamingController {
                     TimeUnit.MILLISECONDS.sleep(700L);
                 }
             } catch (IOException | InterruptedException e) {
-                log.error("Error", e);
+                LOG.error("Error", e);
                 sseEmitter.completeWithError(e);
             } finally {
-                log.debug("Emitter has finished its work");
+                LOG.debug("Emitter has finished its work");
                 sseEmitter.complete();
             }
         });
@@ -59,23 +58,21 @@ public class StreamingController {
     }
 
     @GetMapping(value = "/users-stream/reactive")
-    public Flux<ServerSentEvent<String>> getUsersReactive() {
+    Flux<ServerSentEvent<String>> getUsersReactive() {
         return Flux
                 .fromIterable(googleApi.getUsers())
                 .delayElements(Duration.ofMillis(700L))
                 .map(dto -> generateReactiveEvent(dto, "sse-reactive"))
-                .doOnComplete(() -> log.debug("Reactive emitter has finished its work"));
+                .doOnComplete(() -> LOG.debug("Reactive emitter has finished its work"));
     }
 
     private record UserDto(String name, Integer id) {}
 
     private static class GoogleApi {
-
-        @SneakyThrows
         List<UserDto> getUsers() {
             return Stream
                     .iterate(NumberUtils.INTEGER_ZERO, i -> i < 10, i -> i + NumberUtils.INTEGER_ONE)
-                    .map(i -> new UserDto("Vova-" + RandomStringUtils.randomAlphanumeric(3) + "-" + i + " ", i))
+                    .map(i -> new UserDto("Vova-" + RandomStringUtils.insecure().nextAlphabetic(3) + "-" + i + " ", i))
                     .toList();
         }
 
@@ -97,7 +94,7 @@ public class StreamingController {
                 .name(eventType);
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(StreamingController.class, args);
     }
 

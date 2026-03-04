@@ -6,11 +6,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
-public class SecurityConfig  {
+class SecurityConfig  {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.authorizeHttpRequests().anyRequest().permitAll().and().build();
+    SecurityFilterChain securityFilterChain(final HttpSecurity http) {
+        return http.authorizeHttpRequests(r -> r.anyRequest().permitAll()).build();
     }
 
 }

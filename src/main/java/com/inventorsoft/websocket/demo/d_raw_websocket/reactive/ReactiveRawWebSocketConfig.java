@@ -1,8 +1,5 @@
 package com.inventorsoft.websocket.demo.d_raw_websocket.reactive;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.HandlerMapping;
@@ -14,12 +11,14 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurationSu
 import java.util.Map;
 
 @EnableWebFlux
-@RequiredArgsConstructor
 @Configuration(proxyBeanMethods = false)
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReactiveRawWebSocketConfig {
 
-    ReactiveRawWebSocketHandler reactiveRawWebSocketHandler;
+    private final ReactiveRawWebSocketHandler reactiveRawWebSocketHandler;
+
+    public ReactiveRawWebSocketConfig(final ReactiveRawWebSocketHandler reactiveRawWebSocketHandler) {
+        this.reactiveRawWebSocketHandler = reactiveRawWebSocketHandler;
+    }
 
     /**
      * There is configuration support for blocking approach but not for reactive.
